@@ -62,19 +62,18 @@ class ImageGen:
             response = self.session.get(polling_url)
             if response.status_code != 200:
                 raise Exception("Could not get results")
-            if response.text == "":
-                time.sleep(1)
-                continue
-            else:
+            if response.text != "":
                 break
 
+            time.sleep(1)
+            continue
         # Use regex to search for src=""
         image_links = regex.findall(r'src="([^"]+)"', response.text)
         # Remove size limit
         normal_image_links = [link.split("?w=")[0] for link in image_links]
         # Remove duplicates
         normal_image_links = list(set(normal_image_links))
-        
+
         # Bad images
         bad_images = ["https://r.bing.com/rp/in-2zU3AJUdkgFe7ZKv19yPBHVs.png", "https://r.bing.com/rp/TX9QuO3WzcCJz1uaaSwQAz39Kb0.jpg"]
         for im in normal_image_links:
