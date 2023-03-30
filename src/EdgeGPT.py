@@ -112,7 +112,7 @@ def getRanHex(length: int = 32) -> str:
     """
     Returns random hex string
     """
-    return "".join(random.choice("0123456789abcdef") for i in range(length))
+    return "".join(random.choice("0123456789abcdef") for _ in range(length))
 
 
 class ChatHubRequest:
@@ -240,11 +240,11 @@ class Conversation:
             response = self.session.get(
                 "https://edge.churchless.tech/edgesvc/turing/conversation/create"
             )
-            if response.status_code != 200:
-                print(f"Status code: {response.status_code}")
-                print(response.text)
-                print(response.url)
-                raise Exception("Authentication failed")
+        if response.status_code != 200:
+            print(f"Status code: {response.status_code}")
+            print(response.text)
+            print(response.url)
+            raise Exception("Authentication failed")
         try:
             self.struct = response.json()
             if self.struct["result"]["value"] == "UnauthorizedRequest":
@@ -280,9 +280,8 @@ class ChatHub:
         """
         Ask a question to the bot
         """
-        if self.wss:
-            if not self.wss.closed:
-                await self.wss.close()
+        if self.wss and not self.wss.closed:
+            await self.wss.close()
         # Check if websocket is closed
         self.wss = await websockets.connect(
             wss_link,
@@ -417,10 +416,11 @@ async def main():
     session = create_session()
     while True:
         print("\nYou:")
-        if not args.enter_once:
-            question = await get_input_async(session=session)
-        else:
-            question = input()
+        question = (
+            input()
+            if args.enter_once
+            else await get_input_async(session=session)
+        )
         print()
         if question == "!exit":
             break
@@ -448,8 +448,8 @@ async def main():
                 )["item"]["messages"][1]["adaptiveCards"][0]["body"][0]["text"],
             )
         else:
+            wrote = 0
             if args.rich:
-                wrote = 0
                 md = Markdown("")
                 with Live(md, auto_refresh=False) as live:
                     async for final, response in bot.ask_stream(
@@ -465,7 +465,6 @@ async def main():
                             md = Markdown(response)
                             live.update(md, refresh=True)
             else:
-                wrote = 0
                 async for final, response in bot.ask_stream(
                     prompt=question,
                     conversation_style=args.style,
